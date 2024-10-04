@@ -1,9 +1,15 @@
 from utilities import Context
 from models import User
+from authentication import bp as authentication_blueprint
+from database import bp as database_blueprint
 
 # Get the references from Context
 app = Context().app()
 db = Context().db()
+
+# Register Blueprints
+app.register_blueprint(authentication_blueprint)
+app.register_blueprint(database_blueprint)
 
 # Base route
 @app.route('/')

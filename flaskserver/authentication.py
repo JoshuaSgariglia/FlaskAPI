@@ -5,15 +5,17 @@ from flask_jwt_extended import create_access_token, create_refresh_token, curren
 from models import User
 from utilities import Context
 
-# Get the references to app and login_manager
-app = Context().app()
+# Define Blueprint
+bp = flask.Blueprint('authentication', __name__)
+
+# Get the references to JWT
 jwt = Context().jwt()
 
 # Register a callback function that takes whatever object is passed in as the
 # identity when creating JWTs and converts it to a JSON serializable format.
 @jwt.user_identity_loader
-def user_identity_lookup(user: User) -> str:
-    return user.get_id()
+def user_identity_lookup(user: User) -> callable:
+    return user.get_id
 
 # Register a callback function that loads a user from your database whenever
 # a protected route is accessed. This should return any python object on a
@@ -25,7 +27,7 @@ def user_lookup_callback(_jwt_header, jwt_data) -> User:
     return User.query.filter_by(id = identity).one_or_none()
 
 # Login route
-@app.route('/login', methods=['GET', 'POST'])
+@bp.route('/login', methods=['GET', 'POST'])
 def login():
 
     # Get the args
@@ -57,7 +59,7 @@ def login():
 
 # Protect a route with jwt_required, which will kick out requests
 # without a valid JWT present.
-@app.route("/protected", methods=["GET"])
+@bp.route("/protected", methods=["GET"])
 @jwt_required(optional = False)
 def protected():
     # Access the identity of the current user with get_jwt_identity
@@ -66,7 +68,7 @@ def protected():
 
 # We are using the `refresh=True` options in jwt_required to only allow
 # refresh tokens to access this route.
-@app.route("/refresh", methods=["POST"])
+@bp.route("/refresh", methods=["POST"])
 @jwt_required(refresh = True)
 def refresh():
     access_token = create_access_token(identity = current_user)
