@@ -13,7 +13,7 @@ db = Context().db()
 class User(db.Model):
     id: int = db.Column(db.Integer, primary_key = True)
     username: str = db.Column(db.String(30), unique = True, nullable = False)
-    password: str = db.Column(db.String(30), nullable = False)
+    password: str = db.Column(db.String(100), nullable = False)
     datetime_added: datetime = db.Column(db.DateTime(timezone = True), server_default = func.now())
 
     @reconstructor
@@ -34,7 +34,7 @@ class Role(db.Model):
     rolename: str = db.Column(db.String(30), primary_key = True)
 
 class UserRole(db.Model):
-    user: str = db.Column(db.Integer, primary_key = True)
+    user: int = db.Column(db.Integer, primary_key = True)
     role: str = db.Column(db.String(30), primary_key = True)
     __table_args__ = (
         ForeignKeyConstraint([user], [User.id]),

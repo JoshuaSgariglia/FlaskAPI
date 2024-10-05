@@ -2,6 +2,7 @@ from datetime import timedelta
 from flask import Flask
 from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
 
 
 # Singleton superclass
@@ -18,29 +19,35 @@ class Context(metaclass = SingletonMeta):
     __app: Flask = None
     __db: SQLAlchemy = None
     __jwt: JWTManager = None
+    __bcrypt: Bcrypt = None
 
     def __init__(self):
         ApplicationInitializer.initialize()
         print("Initialization completed")
 
     @classmethod
-    def initialize(cls, app: Flask, db: SQLAlchemy, jwt: JWTManager):
+    def initialize(cls, app: Flask, db: SQLAlchemy, jwt: JWTManager, bcrypt: Bcrypt):
         # Initialize the class variables
         cls.__app = app
         cls.__db = db
         cls.__jwt = jwt
+        cls.__bcrypt = bcrypt
 
     @classmethod
-    def app(cls):
+    def app(cls) -> Flask:
         return cls.__app
     
     @classmethod
-    def db(cls):
+    def db(cls) -> SQLAlchemy:
         return cls.__db
     
     @classmethod
-    def jwt(cls):
+    def jwt(cls) -> JWTManager:
         return cls.__jwt
+    
+    @classmethod
+    def bcrypt(cls) -> Bcrypt:
+        return cls.__bcrypt
 
 
 # ApplicationInitializer class  
@@ -70,5 +77,8 @@ class ApplicationInitializer:
         
         jwt = JWTManager(app)
 
+        # Initialize the Password Hashing module
+        bcrypt = Bcrypt(app)
+
         # Initialize the Context with the Flask app and the database
-        Context.initialize(app, db, jwt)
+        Context.initialize(app, db, jwt, bcrypt)

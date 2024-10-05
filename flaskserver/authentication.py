@@ -35,9 +35,9 @@ def login():
     username = args.get("username", None)
     password = args.get("password", None)
 
-    user: User = User.query.filter_by(username = username, password = password).first()
+    user: User = User.query.filter_by(username = username).first()
 
-    if user is not None:
+    if user is not None and Context.bcrypt().check_password_hash(user.password, password):
 
         '''next = args.get('next', None)
 
