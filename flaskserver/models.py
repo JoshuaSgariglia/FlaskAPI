@@ -1,5 +1,6 @@
 
 from __future__ import annotations
+from dataclasses import dataclass
 from datetime import datetime
 from sqlalchemy import ForeignKeyConstraint, func
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -10,6 +11,7 @@ from utilities import Context
 db = Context().db()
 
 # Models
+@dataclass
 class User(db.Model):
     id: int = db.Column(db.Integer, primary_key = True)
     username: str = db.Column(db.String(30), unique = True, nullable = False)
@@ -30,9 +32,11 @@ class User(db.Model):
     def get_id(self) -> int:
         return self.id
 
+@dataclass
 class Role(db.Model):
     rolename: str = db.Column(db.String(30), primary_key = True)
 
+@dataclass
 class UserRole(db.Model):
     user: int = db.Column(db.Integer, primary_key = True)
     role: str = db.Column(db.String(30), primary_key = True)
@@ -49,6 +53,7 @@ class UserRole(db.Model):
     def get_rolename(self) -> str:
         return self.role
 
+@dataclass
 class Task(db.Model):
     id: int = db.Column(db.Integer, primary_key = True)
     user: str = db.Column(db.String(20), unique = True, nullable = False)
@@ -57,3 +62,7 @@ class Task(db.Model):
     __table_args__ = (
         ForeignKeyConstraint([user], [User.id]),
     )
+
+    @classmethod
+    def get_by_user_id(cls, user_id: int) -> list[str]:
+        return Task.query.filter_by(user = user_id).all()

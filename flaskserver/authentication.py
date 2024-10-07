@@ -72,7 +72,7 @@ def login():
 # Protect a route with jwt_required, which will kick out requests
 # without a valid JWT present.
 @bp.route("/protected", methods=["GET"])
-@jwt_required(optional = False)
+@jwt_required()
 def protected():
     # Access the identity of the current user with get_jwt_identity
     return flask.jsonify(logged_in_as = current_user.username), 200

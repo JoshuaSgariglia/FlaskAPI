@@ -1,6 +1,6 @@
 from functools import wraps
 import flask
-from flask_jwt_extended import current_user, get_current_user, verify_jwt_in_request
+from flask_jwt_extended import current_user, verify_jwt_in_request
 from models import UserRole
 
 # Grants access to users with at least one of "roles"
