@@ -3,6 +3,7 @@ from flask import Flask
 from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
+from redis import StrictRedis
 
 
 # Singleton superclass
@@ -20,18 +21,20 @@ class Context(metaclass = SingletonMeta):
     __db: SQLAlchemy = None
     __jwt: JWTManager = None
     __bcrypt: Bcrypt = None
+    __redis: StrictRedis = None
 
     def __init__(self):
         ApplicationInitializer.initialize()
-        print("Initialization completed")
+        print(f"Initialization completed")
 
     @classmethod
-    def initialize(cls, app: Flask, db: SQLAlchemy, jwt: JWTManager, bcrypt: Bcrypt):
+    def initialize(cls, app: Flask, db: SQLAlchemy, jwt: JWTManager, bcrypt: Bcrypt, redis: StrictRedis):
         # Initialize the class variables
         cls.__app = app
         cls.__db = db
         cls.__jwt = jwt
         cls.__bcrypt = bcrypt
+        cls.__redis = redis
 
     @classmethod
     def app(cls) -> Flask:
@@ -48,6 +51,10 @@ class Context(metaclass = SingletonMeta):
     @classmethod
     def bcrypt(cls) -> Bcrypt:
         return cls.__bcrypt
+    
+    @classmethod
+    def redis(cls) -> StrictRedis:
+        return cls.__redis
 
 
 # ApplicationInitializer class  
@@ -71,7 +78,7 @@ class ApplicationInitializer:
         db = SQLAlchemy(app)
 
         # Initialize the Authentication module
-        app.config["JWT_SECRET_KEY"] = app.config['SECRET_KEY']
+        app.config["JWT_SECRET_KEY"] = '5PJijcrNhrXNaCqeJ4KJmMRBlu7iUAPc'
         app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours = 1)
         app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days = 30)
         
@@ -80,5 +87,17 @@ class ApplicationInitializer:
         # Initialize the Password Hashing module
         bcrypt = Bcrypt(app)
 
+        # Setup our redis connection for storing the blocklisted tokens. You will probably
+        # want your redis instance configured to persist data to disk, so that a restart
+        # does not cause your application to forget that a JWT was revoked.
+        redis = StrictRedis(
+            host="redis-13586.c91.us-east-1-3.ec2.redns.redis-cloud.com", 
+            port=13586, 
+            db=0, 
+            username="default",
+            password="3LSmYtaQ22Zhtd7g2wcBlVInlLVrSVrJ",
+            decode_responses=True
+        )
+
         # Initialize the Context with the Flask app and the database
-        Context.initialize(app, db, jwt, bcrypt)
+        Context.initialize(app, db, jwt, bcrypt, redis)

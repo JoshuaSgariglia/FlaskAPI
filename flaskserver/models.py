@@ -41,6 +41,14 @@ class UserRole(db.Model):
         ForeignKeyConstraint([role], [Role.rolename])
     )
 
+    @classmethod
+    def get_by_user_id(cls, user_id: int) -> list[str]:
+        return UserRole.query.filter_by(user = user_id).all()
+    
+    @hybrid_property
+    def get_rolename(self) -> str:
+        return self.role
+
 class Task(db.Model):
     id: int = db.Column(db.Integer, primary_key = True)
     user: str = db.Column(db.String(20), unique = True, nullable = False)

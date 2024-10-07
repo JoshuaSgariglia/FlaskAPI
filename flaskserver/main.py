@@ -1,23 +1,13 @@
 from utilities import Context
-from models import User
 from authentication import bp as authentication_blueprint
-from database import bp as database_blueprint
+from api import bp as api_blueprint
 
-# Get the references from Context
+# Get the app reference from Context
 app = Context().app()
-db = Context().db()
 
 # Register Blueprints
 app.register_blueprint(authentication_blueprint)
-app.register_blueprint(database_blueprint)
-
-# Base route
-@app.route('/')
-def testdb():
-    user_dict: dict = db.session.query(User).all()[0].__dict__
-    print(user_dict)
-    user_dict.pop("_sa_instance_state")
-    return user_dict
+app.register_blueprint(api_blueprint)
 
 # Entry point for the application
 if __name__ == "__main__":
