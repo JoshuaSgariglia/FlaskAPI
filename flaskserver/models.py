@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy import ForeignKeyConstraint, func
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import reconstructor
-from utilities import Context
+from core import Context
 
 # Get the reference from Context
 db = Context().db()

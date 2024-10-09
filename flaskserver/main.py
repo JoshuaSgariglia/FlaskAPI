@@ -1,4 +1,4 @@
-from utilities import Context
+from core import Context
 from authentication import bp as authentication_blueprint
 from api import bp as api_blueprint
 

@@ -1,103 +1,81 @@
-from datetime import timedelta
-from flask import Flask
-from flask_jwt_extended import JWTManager
-from flask_sqlalchemy import SQLAlchemy
-from flask_bcrypt import Bcrypt
-from redis import StrictRedis
+from flask_jwt_extended import create_access_token, create_refresh_token, decode_token
+from core import Context
+from models import User
 
-
-# Singleton superclass
-class SingletonMeta(type):
-    _instances = {}
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(SingletonMeta, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-
-# Context class   
-class Context(metaclass = SingletonMeta):
-    __app: Flask = None
-    __db: SQLAlchemy = None
-    __jwt: JWTManager = None
-    __bcrypt: Bcrypt = None
-    __redis: StrictRedis = None
-
-    def __init__(self):
-        ApplicationInitializer.initialize()
-        print(f"Initialization completed")
-
+# Redis utilities
+class RedisUtils:
+    # Generates the redis key for the access 
     @classmethod
-    def initialize(cls, app: Flask, db: SQLAlchemy, jwt: JWTManager, bcrypt: Bcrypt, redis: StrictRedis):
-        # Initialize the class variables
-        cls.__app = app
-        cls.__db = db
-        cls.__jwt = jwt
-        cls.__bcrypt = bcrypt
-        cls.__redis = redis
-
-    @classmethod
-    def app(cls) -> Flask:
-        return cls.__app
+    def get_access_token_key(cls, user: User) -> str:
+        return f"{user.get_id}:access_token"
     
+    # Generates the redis key for the refresh token
     @classmethod
-    def db(cls) -> SQLAlchemy:
-        return cls.__db
+    def get_refresh_token_key(cls, user: User) -> str:
+        return f"{user.get_id}:refresh_token"
     
+    # Returns the access token for the specified user
     @classmethod
-    def jwt(cls) -> JWTManager:
-        return cls.__jwt
+    def get_access_token(cls, user: User) -> str:
+        return Context.redis().get(cls.get_access_token_key(user))
     
+    # Returns the refresh token for the specified user
     @classmethod
-    def bcrypt(cls) -> Bcrypt:
-        return cls.__bcrypt
-    
+    def get_refresh_token(cls, user: User) -> str:
+        return Context.redis().get(cls.get_refresh_token_key(user))
+
+    # Saves access token to Redis database
     @classmethod
-    def redis(cls) -> StrictRedis:
-        return cls.__redis
+    def save_access_token(cls, user: User, token: str):
+        Context.redis().set(cls.get_access_token_key(user), decode_token(token)["jti"], ex=Context.app().config["JWT_ACCESS_TOKEN_EXPIRES"])
 
-
-# ApplicationInitializer class  
-class ApplicationInitializer:
+    # Saves refresh token to Redis database
     @classmethod
-    def initialize(cls):
-        # Initialize the Flask library
-        app = Flask(__name__)
+    def save_refresh_token(cls, user: User, token: str):
+        Context.redis().set(cls.get_refresh_token_key(user), decode_token(token)["jti"], ex=Context.app().config["JWT_REFRESH_TOKEN_EXPIRES"])
 
-        # Initialize the database
-        app.config['SECRET_KEY'] = 'LzLIDNOvsfDEwqXogc6CNhjXkJn1C7mx'
+    # Saves access and refresh tokens to Redis database
+    @classmethod
+    def save_tokens(cls, user: User, access_token: str, refresh_token: str):
+        user_id = user.get_id
+        cls.save_access_token(user_id, access_token)
+        cls.save_refresh_token(user_id, refresh_token)
 
-        USERPASS = 'mysql+pymysql://root:@'
-        BASEDIR  = '127.0.0.1'
-        DBNAME   = '/flask_db'
-        #SOCKET   = '?unix_socket=/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock'
+    # Deletes any saved tokens for the provided user
+    @classmethod
+    def delete_tokens(cls, user: User):
+        user_id = user.get_id
+        Context.redis().delete(cls.get_access_token_key(user), cls.get_refresh_token_key(user))
 
-        app.config['SQLALCHEMY_DATABASE_URI'] = USERPASS + BASEDIR + DBNAME
-        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
-        db = SQLAlchemy(app)
+# Flask utilities
+class FlaskUtils:
+    # Generates a new access token and saves it to Redis database
+    @classmethod
+    def generate_access_token(cls, user: User) -> str:
+        # Creates new access token
+        access_token = create_access_token(identity = user)
 
-        # Initialize the Authentication module
-        app.config["JWT_SECRET_KEY"] = '5PJijcrNhrXNaCqeJ4KJmMRBlu7iUAPc'
-        app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours = 1)
-        app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days = 30)
-        
-        jwt = JWTManager(app)
+        # Saves access token to redis database
+        RedisUtils.save_access_token(user, access_token)
 
-        # Initialize the Password Hashing module
-        bcrypt = Bcrypt(app)
+        return access_token
 
-        # Setup our redis connection for storing the blocklisted tokens. You will probably
-        # want your redis instance configured to persist data to disk, so that a restart
-        # does not cause your application to forget that a JWT was revoked.
-        redis = StrictRedis(
-            host="redis-13586.c91.us-east-1-3.ec2.redns.redis-cloud.com", 
-            port=13586, 
-            db=0, 
-            username="default",
-            password="3LSmYtaQ22Zhtd7g2wcBlVInlLVrSVrJ",
-            decode_responses=True
-        )
+    # Generates a new refresh token and saves it to Redis database
+    @classmethod
+    def generate_refresh_token(cls, user: User) -> str:
+        # Creates new refresh token
+        refresh_token = create_refresh_token(identity = user)
 
-        # Initialize the Context with the Flask app and the database
-        Context.initialize(app, db, jwt, bcrypt, redis)
+        # Saves refresh token to redis database
+        RedisUtils.save_refresh_token(user, refresh_token)
+
+        return refresh_token
+
+    # Generates new access and refresh tokens and saves them to Redis database
+    @classmethod
+    def generate_tokens(cls, user: User) -> tuple[str]:
+        access_token = cls.generate_access_token(user)
+        refresh_token = cls.generate_refresh_token(user)
+        return access_token, refresh_token
+

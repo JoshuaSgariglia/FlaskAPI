@@ -1,9 +1,12 @@
 
+from functools import wraps
 import flask
 from http_utils import url_has_allowed_host_and_scheme
-from flask_jwt_extended import create_access_token, create_refresh_token, current_user, get_jwt, jwt_required
+from flask_jwt_extended import create_access_token, create_refresh_token, current_user, decode_token, get_jti, get_jwt, jwt_required, verify_jwt_in_request
+from flask_jwt_extended.view_decorators import LocationType
 from models import User
-from utilities import Context
+from core import Context
+from utilities import FlaskUtils, RedisUtils
 
 # Define Blueprint
 bp = flask.Blueprint('authentication', __name__)
@@ -29,12 +32,37 @@ def user_lookup_callback(_jwt_header, jwt_data) -> User:
     identity = jwt_data["sub"]
     return User.query.filter_by(id = identity).one_or_none()
 
-# Callback function to check if a JWT exists in the redis blocklist
-@jwt.token_in_blocklist_loader
-def check_if_token_is_revoked(jwt_header, jwt_payload: dict):
-    jti = jwt_payload["jti"]
-    token_in_redis = Context.redis().get(jti)
-    return token_in_redis is not None  # Must return TRUE if revoked
+
+
+# Decorators
+
+# Function to check if a provided JWT is valid and exists in the redis database (not revoked)
+def verify_token(
+        optional: bool = False, 
+        fresh: bool = False, 
+        refresh: bool = False, 
+        locations: LocationType = None,
+        verify_type: bool = True,
+        skip_revocation_check: bool = True  # Recommended method not implemented because it is based on a blocklist
+        ):
+    def decorator(f):
+        @wraps(f)
+        def decorator_function(*args, **kwargs):
+            # Calling @jwt_required()
+            verify_jwt_in_request(optional, fresh, refresh, locations, verify_type, skip_revocation_check)
+
+            # Checking if token is revoked
+            # Getting access or refresh token - Access\refresh token is not present in Redis if revoked or expired
+            token_in_redis = RedisUtils.get_refresh_token(current_user) if refresh else RedisUtils.get_access_token(current_user)
+
+            # Getting the provided token
+            token_provided = get_jwt()["jti"]
+
+            if token_in_redis is None or token_in_redis != token_provided:  # Must evaluate to TRUE if revoked
+                return flask.jsonify({"msg": "Token has been revoked"}), 401
+            return f(*args, **kwargs)
+        return decorator_function
+    return decorator
 
 
 # Routes
@@ -62,35 +90,28 @@ def login():
 
             return flask.redirect(next, methods = ["GET"])'''
 
-        access_token = create_access_token(identity = user)
-        refresh_token = create_refresh_token(identity = user)
+        # Creates and stores\overrides the access token access and refresh tokens
+        access_token, refresh_token = FlaskUtils.generate_tokens(user)
 
         return flask.jsonify(access_token = access_token, refresh_token = refresh_token), 200
 
     return flask.jsonify({"msg": "Bad username or password"}), 401
 
-# Protect a route with jwt_required, which will kick out requests
-# without a valid JWT present.
-@bp.route("/protected", methods=["GET"])
-@jwt_required()
-def protected():
-    # Access the identity of the current user with get_jwt_identity
-    return flask.jsonify(logged_in_as = current_user.username), 200
-
-# We are using the `refresh=True` options in jwt_required to only allow
+# We are using the `refresh=True` option in jwt_required to only allow
 # refresh tokens to access this route.
 @bp.route("/refresh", methods=["POST"])
-@jwt_required(refresh = True)
+@verify_token(refresh = True)
 def refresh():
-    access_token = create_access_token(identity = current_user)
+    # Creates and stores\overrides the access token
+    access_token = FlaskUtils.generate_access_token(current_user)
+    
     return flask.jsonify(access_token = access_token), 200
 
-# Endpoint for revoking the current users access token. Save the JWTs unique
-# identifier (jti) in redis. Also set a Time to Live (TTL)  when storing the JWT
-# so that it will automatically be cleared out of redis after the token expires.
+# Endpoint for revoking the current users access and refresh tokens.
 @bp.route("/logout", methods=["DELETE"])
-@jwt_required(optional = False)
+@verify_token()
 def logout():
-    jti = get_jwt()["jti"]
-    Context.redis().set(jti, current_user.get_id, ex=Context.app().config["JWT_ACCESS_TOKEN_EXPIRES"])
-    return flask.jsonify(msg="Access token revoked")
+    # Revokes both the access and the refresh tokens
+    RedisUtils.delete_tokens(current_user)
+
+    return flask.jsonify(msg="Access and refresh tokens revoked")
