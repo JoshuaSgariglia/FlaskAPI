@@ -19,9 +19,15 @@ def testdb():
 @bp.route("/get_sensor_info", methods=["GET"])
 @verify_token()
 def get_sensor_info():
-    response: requests.Response = requests.get(url="http://193.205.129.120:63429/api/data?sensor_id=http:%2F%2Fhomey\%2Fexample_graph%2Fsensor_mix_kitchen")
-    print(response.__dict__)
-    return flask.jsonify(response.json()), 200
+
+    url = "http://193.205.129.120:63429/api/data?sensor_id=http:%2F%2Fhomey%2Fexample_graph%2Fsensor_mix_kitchen"
+    print(f"Sensor data requested from {url}")
+
+    # Gets streams from API monitoring server
+    response = requests.get(url, stream = True)
+    
+    # Acts like a Proxy and returns same stream response
+    return flask.Response(response.iter_content(), content_type = response.headers['Content-Type'])
 
 # Protect a route with jwt_required, which will kick out requests
 # without a valid JWT present.
@@ -30,7 +36,6 @@ def get_sensor_info():
 def protected():
     # Access the identity of the current user with get_jwt_identity
     return flask.jsonify(logged_in_as = current_user.username), 200
-
 
 # Protect a route with jwt_required, which will kick out requests
 # without a valid JWT present.

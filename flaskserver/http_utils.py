@@ -110,3 +110,40 @@ def _url_has_allowed_host_and_scheme(url, allowed_hosts, require_https=False):
     valid_schemes = ['https'] if require_https else ['http', 'https']
     return ((not url_info.netloc or url_info.netloc in allowed_hosts) and
             (not scheme or scheme in valid_schemes))
+
+'''
+# Stream Handler
+import json
+import socketserver
+import time
+from http.server import SimpleHTTPRequestHandler
+from http.client import HTTPConnection
+
+class StreamConnection(HTTPConnection):
+    def do_GET(self, domain: str, port: str, method: str = 'GET', route: str = '/'):
+        #Getting data from other server
+        connection = cls('http://example.com', 80)
+        connection.request('GET', '/value121', headers={
+            'Accept': 'text/event-source',
+            'Connection': 'Keep-Alive',
+        })
+        with connection.getresponse() as response:
+            while not response.closed:
+                print(response.__dict__)
+
+class StreamProvider(SimpleHTTPRequestHandler):
+    def send(self, response):
+        # Sending response
+        self.send_response(200)
+        self.send_header('Connection', 'Keep-Alive')
+        self.send_header('Content-Type', 'text/event-stream')
+        self.end_headers()
+
+        name = self.path.strip('/').encode('UTF-8')
+
+        while True:
+            time.sleep(5)
+
+server = socketserver.TCPServer(('', 80), StreamProvider)
+server.serve_forever()
+'''
