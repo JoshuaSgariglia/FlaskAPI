@@ -7,12 +7,12 @@ class RedisUtils:
     # Generates the redis key for the access 
     @classmethod
     def get_access_token_key(cls, user: User) -> str:
-        return f"{user.get_id}:access_token"
+        return f"user_{user.get_id}:access_token_identifier"
     
     # Generates the redis key for the refresh token
     @classmethod
     def get_refresh_token_key(cls, user: User) -> str:
-        return f"{user.get_id}:refresh_token"
+        return f"user_{user.get_id}:refresh_token_identifier"
     
     # Returns the access token for the specified user
     @classmethod
