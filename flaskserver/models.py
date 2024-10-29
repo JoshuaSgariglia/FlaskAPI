@@ -20,9 +20,9 @@ class User(db.Model):
 
     @reconstructor
     def __init_on_load(self):
-        self.is_authenticated: bool = False
+        '''self.is_authenticated: bool = False
         self.is_active: bool = True
-        self.is_anonymous: bool = False
+        self.is_anonymous: bool = False'''
 
     @classmethod
     def get(cls, user_id: int) -> User:
@@ -46,7 +46,7 @@ class UserRole(db.Model):
     )
 
     @classmethod
-    def get_by_user_id(cls, user_id: int) -> list[str]:
+    def get_by_user_id(cls, user_id: int) -> list[UserRole]:
         return UserRole.query.filter_by(user = user_id).all()
     
     @hybrid_property

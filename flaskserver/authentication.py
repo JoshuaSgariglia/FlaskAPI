@@ -1,8 +1,7 @@
 
 from functools import wraps
 import flask
-from http_utils import url_has_allowed_host_and_scheme
-from flask_jwt_extended import create_access_token, create_refresh_token, current_user, decode_token, get_jti, get_jwt, jwt_required, verify_jwt_in_request
+from flask_jwt_extended import current_user, get_jwt, verify_jwt_in_request
 from flask_jwt_extended.view_decorators import LocationType
 from models import User
 from core import Context
@@ -59,7 +58,7 @@ def verify_token(
             token_provided = get_jwt()["jti"]
 
             if token_in_redis is None or token_in_redis != token_provided:  # Must evaluate to TRUE if revoked
-                return flask.jsonify({"msg": "Token has been revoked"}), 401
+                return flask.jsonify(message = "Token has been revoked"), 401
             return f(*args, **kwargs)
         return decorator_function
     return decorator
@@ -68,38 +67,30 @@ def verify_token(
 # Routes
 
 # Login route
-@bp.route('/login', methods=['GET', 'POST'])
+@bp.route('/login', methods=['POST'])
 def login():
 
     # Get the args
-    args = flask.request.args
+    args = flask.request.form
     username = args.get("username", None)
     password = args.get("password", None)
+
+    print(args.__str__())
 
     user: User = User.query.filter_by(username = username).first()
 
     if user is not None and Context.bcrypt().check_password_hash(user.password, password):
-
-        '''next = args.get('next', None)
-
-        if next is not None:
-            # url_has_allowed_host_and_scheme should check if the url is safe
-            # for redirects, meaning it matches the request host.
-            if not url_has_allowed_host_and_scheme(next, flask.request.host):
-                return flask.abort(400)
-
-            return flask.redirect(next, methods = ["GET"])'''
 
         # Creates and stores\overrides the access token access and refresh tokens
         access_token, refresh_token = FlaskUtils.generate_tokens(user)
 
         return flask.jsonify(access_token = access_token, refresh_token = refresh_token), 200
 
-    return flask.jsonify({"msg": "Bad username or password"}), 401
+    return flask.jsonify(message = "Bad username or password"), 401
 
 # We are using the `refresh=True` option in jwt_required to only allow
 # refresh tokens to access this route.
-@bp.route("/refresh", methods=["POST"])
+@bp.route("/refresh", methods=["GET", "POST"])
 @verify_token(refresh = True)
 def refresh():
     # Creates and stores\overrides the access token
@@ -114,4 +105,4 @@ def logout():
     # Revokes both the access and the refresh tokens
     RedisUtils.delete_tokens(current_user)
 
-    return flask.jsonify(msg="Access and refresh tokens revoked")
+    return flask.jsonify(message = "Access and refresh tokens revoked")

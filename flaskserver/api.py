@@ -3,17 +3,36 @@ from flask_jwt_extended import current_user
 import requests
 from authorization import allow, deny
 from authentication import verify_token
-from models import Task, User
+from models import Task, User, UserRole
 
 # Define Blueprint
 bp = flask.Blueprint('api', __name__)
 
 # Base route
 @bp.route('/')
-def testdb():
-    user_dict: dict = User.query.all()[0].__dict__
+def test_connection():
+    return flask.jsonify(message = "Authentication Service is online")
+
+# Protect a route with verify_token, which will kick out requests
+# without a valid JWT present.
+
+# Get user data
+@bp.route("/user_data", methods=["GET"])
+@verify_token()
+def user_data():
+    # Gets basic data
+    user_dict: dict[str, any] = current_user.__dict__
+    user_dict.pop("password")
     user_dict.pop("_sa_instance_state")
-    return user_dict
+
+    # Gets roles
+    role_list: list[UserRole] = UserRole.get_by_user_id(current_user.get_id)
+    rolenames: list[str] = []
+    for role in role_list:
+        rolenames.append(role.get_rolename)
+    user_dict["role_list"] = rolenames
+    
+    return flask.jsonify(user_dict), 200
 
 # Route to get sensor info
 @bp.route("/get_sensor_info", methods=["GET"])
@@ -29,29 +48,19 @@ def get_sensor_info():
     # Acts like a Proxy and returns same stream response
     return flask.Response(response.iter_content(), content_type = response.headers['Content-Type'])
 
-# Protect a route with jwt_required, which will kick out requests
-# without a valid JWT present.
-@bp.route("/protected", methods=["GET"])
-@verify_token()
-def protected():
-    # Access the identity of the current user with get_jwt_identity
-    return flask.jsonify(logged_in_as = current_user.username), 200
-
-# Protect a route with jwt_required, which will kick out requests
-# without a valid JWT present.
+# Route potected with token and role
 @bp.route("/teachers_only", methods=["GET"])
 @allow(roles = ["Professore", "Direttore"])
 def teachers_only():
     # Access the identity of the current user with get_jwt_identity
-    return flask.jsonify(msg = current_user.username + " entered the teachers area"), 200
+    return flask.jsonify(message = current_user.username + " entered the teachers area"), 200
 
-# Protect a route with jwt_required, which will kick out requests
-# without a valid JWT present.
+# Route protected with token and role
 @bp.route("/public", methods=["GET"])
 @allow(roles = ["Studente", "Professore", "Direttore"])
 def public():
     # Access the identity of the current user with get_jwt_identity
-    return flask.jsonify(msg = current_user.username + " entered the public area"), 200
+    return flask.jsonify(message = current_user.username + " entered the public area"), 200
 
 # Get user tasks
 @bp.route("/user_tasks", methods=["GET"])
