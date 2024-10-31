@@ -26,7 +26,7 @@ def allow(
             for user_role in UserRole.get_by_user_id(current_user.id):
                 if user_role.get_rolename in roles:
                     return f(*args, **kwargs)
-                return flask.jsonify(message = "Unauthorized"), 401
+                return flask.jsonify(msg = "Unauthorized"), 401
         return decorator_function
     return decorator
 
@@ -47,7 +47,7 @@ def deny(
             # Checking user role
             for user_role in UserRole.get_by_user_id(current_user.id):
                 if user_role.get_rolename in roles:
-                    return flask.jsonify(message = "Unauthorized"), 401
+                    return flask.jsonify(msg = "Unauthorized"), 401
                 return f(*args, **kwargs)
         return decorator_function
     return decorator

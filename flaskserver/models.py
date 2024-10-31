@@ -91,11 +91,11 @@ class Task(db.Model):
 class UsernameException(Exception):
     message: str = "The given username is invalid"
 
-class UsernameExistsException (UsernameException):
+class UsernameExistsException(UsernameException):
     message: str = "The given username is already in use"
 
-class UsernameTooShortException (UsernameException):
+class UsernameTooShortException(UsernameException):
     message: str = f"The given username must be at least {Context.min_username_length()} characters long"
 
-class PasswordTooShortException (Exception):
+class PasswordTooShortException(Exception):
     message: str = f"The given password must be at least {Context.min_password_length()} characters long"

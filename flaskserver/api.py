@@ -54,14 +54,14 @@ def get_sensor_info():
 @allow(roles = ["Professore", "Direttore"])
 def teachers_only():
     # Access the identity of the current user with get_jwt_identity
-    return flask.jsonify(message = current_user.username + " entered the teachers area"), 200
+    return flask.jsonify(msg = current_user.username + " entered the teachers area"), 200
 
 # Route protected with token and role
 @bp.route("/public", methods=["GET"])
 @allow(roles = ["Studente", "Professore", "Direttore"])
 def public():
     # Access the identity of the current user with get_jwt_identity
-    return flask.jsonify(message = current_user.username + " entered the public area"), 200
+    return flask.jsonify(msg = current_user.username + " entered the public area"), 200
 
 # Get user tasks
 @bp.route("/user-tasks", methods=["GET"])
@@ -74,31 +74,30 @@ def get_user_tasks():
 @verify_token(fresh = True)
 def update_username():
     # Get the args
-    args = flask.request.form
-    username = args.get("username", None)
+    print()
+    username = flask.request.data.decode("utf-8")
 
     try:
         current_user.update_username(username)
         
     except UsernameException as exception:
-        return flask.jsonify(message = exception.message), 400
+        return flask.jsonify(msg = exception.message, exceptionType = exception.__class__.__name__), 400
 
-    return flask.jsonify(message = "Username updated successfully"), 200
+    return flask.jsonify(msg = "Username updated successfully"), 200
 
 # Only fresh JWTs can access this endpoint
 @bp.route('/update-password', methods=['PUT'])
 @verify_token(fresh = True)
 def update_password():
     # Get the args
-    args = flask.request.form
-    password = args.get("password", None)
+    password = flask.request.data.decode("utf-8")
 
     try: 
         current_user.update_password(password)
         
     except PasswordTooShortException as exception:
-        return flask.jsonify(message = exception.message), 400
+        return flask.jsonify(msg = exception.message, exceptionType = exception.__class__.__name__), 400
 
-    return flask.jsonify(message = "Password updated successfully"), 200
+    return flask.jsonify(msg = "Password updated successfully"), 200
 
 

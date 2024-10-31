@@ -86,7 +86,7 @@ def login():
 
         return flask.jsonify(access_token = access_token, refresh_token = refresh_token), 200
 
-    return flask.jsonify(message = "Bad username or password"), 401
+    return flask.jsonify(msg = "Bad username or password"), 401
 
 
 # Fresh login endpoint. This is designed to be used if we need to
@@ -111,7 +111,7 @@ def fresh_login():
 
         return flask.jsonify(access_token = access_token), 200
 
-    return flask.jsonify(message = "Bad username or password"), 401
+    return flask.jsonify(msg = "Bad username or password"), 401
 
 # Refresh token endpoint. This will generate a new access token from
 # the refresh token, but will mark that access token as non-fresh,
@@ -133,4 +133,4 @@ def logout():
     # Revokes both the access and the refresh tokens
     RedisUtils.delete_tokens(current_user)
 
-    return flask.jsonify(message = "Access and refresh tokens revoked")
+    return flask.jsonify(msg = "Access and refresh tokens revoked")
