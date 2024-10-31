@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
@@ -6,7 +5,6 @@ from sqlalchemy import ForeignKeyConstraint, func
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import reconstructor
 from core import Context
-from flaskserver.utilities import UsernameExistsException
 
 # Get the reference from Context
 db = Context().db()
@@ -35,15 +33,23 @@ class User(db.Model):
         return User.query.filter_by(username = username).one_or_none()
     
     def update_username(self, new_username: str) -> None:
-        if self.get_by_username(new_username) is None:
+        if len(new_username) < Context.min_username_length():
+            raise UsernameTooShortException
+        
+        elif User.get_by_username(new_username) is not None:
+            raise UsernameExistsException
+        
+        else:
             self.username = new_username
             db.session.commit()
-        else:
-            raise UsernameExistsException
     
     def update_password(self, new_password: str) -> None:
-        self.password = Context.bcrypt().generate_password_hash(new_password)
-        db.session.commit()
+        if len(new_password) < Context.min_password_length():
+            raise PasswordTooShortException
+        
+        else:
+            self.password = Context.bcrypt().generate_password_hash(new_password)
+            db.session.commit()
 
 @dataclass
 class Role(db.Model):
@@ -79,3 +85,17 @@ class Task(db.Model):
     @classmethod
     def get_by_user_id(cls, user_id: int) -> list[str]:
         return Task.query.filter_by(user = user_id).all()
+    
+
+# Custom exceptions
+class UsernameException(Exception):
+    message: str = "The given username is invalid"
+
+class UsernameExistsException (UsernameException):
+    message: str = "The given username is already in use"
+
+class UsernameTooShortException (UsernameException):
+    message: str = f"The given username must be at least {Context.min_username_length()} characters long"
+
+class PasswordTooShortException (Exception):
+    message: str = f"The given password must be at least {Context.min_password_length()} characters long"

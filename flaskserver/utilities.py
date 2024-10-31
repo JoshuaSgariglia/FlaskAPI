@@ -78,9 +78,3 @@ class FlaskUtils:
         access_token = cls.generate_access_token(user, fresh_access_token)
         refresh_token = cls.generate_refresh_token(user)
         return access_token, refresh_token
-
-
-# Custom exceptions
-class UsernameExistsException (Exception):
-    message: str = "The given username is already in use"
-

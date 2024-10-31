@@ -36,6 +36,7 @@ class Context(metaclass = SingletonMeta):
         cls.__bcrypt = bcrypt
         cls.__redis = redis
 
+    # Getters
     @classmethod
     def app(cls) -> Flask:
         return cls.__app
@@ -55,6 +56,15 @@ class Context(metaclass = SingletonMeta):
     @classmethod
     def redis(cls) -> StrictRedis:
         return cls.__redis
+    
+    # Utilities
+    @classmethod
+    def min_username_length(cls) -> StrictRedis:
+        return cls.__app.config["MIN_USERNAME_LENGTH"]
+    
+    @classmethod
+    def min_password_length(cls) -> StrictRedis:
+        return cls.__app.config["MIN_PASSWORD_LENGTH"]
 
 
 # ApplicationInitializer class  
@@ -74,6 +84,9 @@ class ApplicationInitializer:
 
         app.config['SQLALCHEMY_DATABASE_URI'] = USERPASS + BASEDIR + DBNAME
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+
+        app.config['MIN_USERNAME_LENGTH'] = 3
+        app.config['MIN_PASSWORD_LENGTH'] = 6
 
         db = SQLAlchemy(app)
 

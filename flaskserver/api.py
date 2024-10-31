@@ -3,6 +3,7 @@ from flask_jwt_extended import current_user
 import requests
 from authorization import allow, deny
 from authentication import verify_token
+from models import PasswordTooShortException, UsernameException
 from models import Task, User, UserRole
 
 # Define Blueprint
@@ -17,7 +18,7 @@ def test_connection():
 # without a valid JWT present.
 
 # Get user data
-@bp.route("/user_data", methods=["GET"])
+@bp.route("/user-data", methods=["GET"])
 @verify_token()
 def user_data():
     # Gets basic data
@@ -35,7 +36,7 @@ def user_data():
     return flask.jsonify(user_dict), 200
 
 # Route to get sensor info
-@bp.route("/get_sensor_info", methods=["GET"])
+@bp.route("/get-sensor-info", methods=["GET"])
 @verify_token()
 def get_sensor_info():
 
@@ -49,7 +50,7 @@ def get_sensor_info():
     return flask.Response(response.iter_content(), content_type = response.headers['Content-Type'])
 
 # Route potected with token and role
-@bp.route("/teachers_only", methods=["GET"])
+@bp.route("/teachers-only", methods=["GET"])
 @allow(roles = ["Professore", "Direttore"])
 def teachers_only():
     # Access the identity of the current user with get_jwt_identity
@@ -63,22 +64,41 @@ def public():
     return flask.jsonify(message = current_user.username + " entered the public area"), 200
 
 # Get user tasks
-@bp.route("/user_tasks", methods=["GET"])
+@bp.route("/user-tasks", methods=["GET"])
 @verify_token()
 def get_user_tasks():
     return flask.jsonify(Task.get_by_user_id(current_user.id)), 200
 
-# Any valid JWT can access this endpoint
-@bp.route('/protected', methods=['GET'])
-@verify_token()
-def protected():
-    return flask.jsonify(logged_in_as=current_user.username), 200
+# Only fresh JWTs can access this endpoint
+@bp.route('/update-username', methods=['PUT'])
+@verify_token(fresh = True)
+def update_username():
+    # Get the args
+    args = flask.request.form
+    username = args.get("username", None)
 
+    try:
+        current_user.update_username(username)
+        
+    except UsernameException as exception:
+        return flask.jsonify(message = exception.message), 400
+
+    return flask.jsonify(message = "Username updated successfully"), 200
 
 # Only fresh JWTs can access this endpoint
-@bp.route('/protected-fresh', methods=['GET'])
+@bp.route('/update-password', methods=['PUT'])
 @verify_token(fresh = True)
-def protected_fresh():
-    return flask.jsonify(logged_in_as=current_user.username), 200
+def update_password():
+    # Get the args
+    args = flask.request.form
+    password = args.get("password", None)
+
+    try: 
+        current_user.update_password(password)
+        
+    except PasswordTooShortException as exception:
+        return flask.jsonify(message = exception.message), 400
+
+    return flask.jsonify(message = "Password updated successfully"), 200
 
 
