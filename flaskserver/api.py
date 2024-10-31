@@ -26,7 +26,7 @@ def user_data():
     user_dict.pop("_sa_instance_state")
 
     # Gets roles
-    role_list: list[UserRole] = UserRole.get_by_user_id(current_user.get_id)
+    role_list: list[UserRole] = UserRole.get_by_user_id(current_user.id)
     rolenames: list[str] = []
     for role in role_list:
         rolenames.append(role.get_rolename)
@@ -66,6 +66,19 @@ def public():
 @bp.route("/user_tasks", methods=["GET"])
 @verify_token()
 def get_user_tasks():
-    return flask.jsonify(Task.get_by_user_id(current_user.get_id)), 200
+    return flask.jsonify(Task.get_by_user_id(current_user.id)), 200
+
+# Any valid JWT can access this endpoint
+@bp.route('/protected', methods=['GET'])
+@verify_token()
+def protected():
+    return flask.jsonify(logged_in_as=current_user.username), 200
+
+
+# Only fresh JWTs can access this endpoint
+@bp.route('/protected-fresh', methods=['GET'])
+@verify_token(fresh = True)
+def protected_fresh():
+    return flask.jsonify(logged_in_as=current_user.username), 200
 
 

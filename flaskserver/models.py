@@ -6,6 +6,7 @@ from sqlalchemy import ForeignKeyConstraint, func
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import reconstructor
 from core import Context
+from flaskserver.utilities import UsernameExistsException
 
 # Get the reference from Context
 db = Context().db()
@@ -18,6 +19,7 @@ class User(db.Model):
     password: str = db.Column(db.String(100), nullable = False)
     datetime_added: datetime = db.Column(db.DateTime(timezone = True), server_default = func.now())
 
+    # Acts as the default init
     @reconstructor
     def __init_on_load(self):
         '''self.is_authenticated: bool = False
@@ -25,12 +27,23 @@ class User(db.Model):
         self.is_anonymous: bool = False'''
 
     @classmethod
-    def get(cls, user_id: int) -> User:
-        return User.query.filter_by(id = user_id).first()
-
-    @hybrid_property
-    def get_id(self) -> int:
-        return self.id
+    def get_by_id(cls, user_id: int) -> User:
+        return User.query.filter_by(id = user_id).one_or_none()
+    
+    @classmethod
+    def get_by_username(cls, username: str) -> User:
+        return User.query.filter_by(username = username).one_or_none()
+    
+    def update_username(self, new_username: str) -> None:
+        if self.get_by_username(new_username) is None:
+            self.username = new_username
+            db.session.commit()
+        else:
+            raise UsernameExistsException
+    
+    def update_password(self, new_password: str) -> None:
+        self.password = Context.bcrypt().generate_password_hash(new_password)
+        db.session.commit()
 
 @dataclass
 class Role(db.Model):

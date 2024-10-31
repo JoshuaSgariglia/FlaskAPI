@@ -7,12 +7,12 @@ class RedisUtils:
     # Generates the redis key for the access 
     @classmethod
     def get_access_token_key(cls, user: User) -> str:
-        return f"user_{user.get_id}:access_token_identifier"
+        return f"user_{user.id}:access_token_identifier"
     
     # Generates the redis key for the refresh token
     @classmethod
     def get_refresh_token_key(cls, user: User) -> str:
-        return f"user_{user.get_id}:refresh_token_identifier"
+        return f"user_{user.id}:refresh_token_identifier"
     
     # Returns the access token for the specified user
     @classmethod
@@ -37,14 +37,14 @@ class RedisUtils:
     # Saves access and refresh tokens to Redis database
     @classmethod
     def save_tokens(cls, user: User, access_token: str, refresh_token: str):
-        user_id = user.get_id
+        user_id = user.id
         cls.save_access_token(user_id, access_token)
         cls.save_refresh_token(user_id, refresh_token)
 
     # Deletes any saved tokens for the provided user
     @classmethod
     def delete_tokens(cls, user: User):
-        user_id = user.get_id
+        user_id = user.id
         Context.redis().delete(cls.get_access_token_key(user), cls.get_refresh_token_key(user))
 
 
@@ -52,9 +52,9 @@ class RedisUtils:
 class FlaskUtils:
     # Generates a new access token and saves it to Redis database
     @classmethod
-    def generate_access_token(cls, user: User) -> str:
+    def generate_access_token(cls, user: User, fresh: bool = False) -> str:
         # Creates new access token
-        access_token = create_access_token(identity = user)
+        access_token = create_access_token(identity = user, fresh = fresh)
 
         # Saves access token to redis database
         RedisUtils.save_access_token(user, access_token)
@@ -74,8 +74,13 @@ class FlaskUtils:
 
     # Generates new access and refresh tokens and saves them to Redis database
     @classmethod
-    def generate_tokens(cls, user: User) -> tuple[str]:
-        access_token = cls.generate_access_token(user)
+    def generate_tokens(cls, user: User, fresh_access_token: bool = False) -> tuple[str]:
+        access_token = cls.generate_access_token(user, fresh_access_token)
         refresh_token = cls.generate_refresh_token(user)
         return access_token, refresh_token
+
+
+# Custom exceptions
+class UsernameExistsException (Exception):
+    message: str = "The given username is already in use"
 

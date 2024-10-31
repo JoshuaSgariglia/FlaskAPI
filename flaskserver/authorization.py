@@ -23,7 +23,7 @@ def allow(
         @verify_token(optional, fresh, refresh, locations, verify_type, skip_revocation_check)
         def decorator_function(*args, **kwargs):
             # Checking user role
-            for user_role in UserRole.get_by_user_id(current_user.get_id):
+            for user_role in UserRole.get_by_user_id(current_user.id):
                 if user_role.get_rolename in roles:
                     return f(*args, **kwargs)
                 return flask.jsonify(message = "Unauthorized"), 401
@@ -45,7 +45,7 @@ def deny(
         @verify_token(optional, fresh, refresh, locations, verify_type, skip_revocation_check)
         def decorator_function(*args, **kwargs):
             # Checking user role
-            for user_role in UserRole.get_by_user_id(current_user.get_id):
+            for user_role in UserRole.get_by_user_id(current_user.id):
                 if user_role.get_rolename in roles:
                     return flask.jsonify(message = "Unauthorized"), 401
                 return f(*args, **kwargs)
