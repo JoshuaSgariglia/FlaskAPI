@@ -39,8 +39,8 @@ def user_data():
 @bp.route("/get-sensor-info", methods=["GET"])
 @verify_token()
 def get_sensor_info():
-
-    url = "http://193.205.129.120:63429/api/data?sensor_id=http:%2F%2Fhomey%2Fexample_graph%2Fsensor_mix_kitchen"
+    room = flask.request.args.get("room", "kitchen")
+    url = f"http://193.205.129.120:63429/api/data?sensor_id=http:%2F%2Fhomey%2Fexample_graph%2Fsensor_mix_{room}"
     print(f"Sensor data requested from {url}")
 
     # Gets streams from API monitoring server
