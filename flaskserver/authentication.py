@@ -32,7 +32,6 @@ def user_lookup_callback(_jwt_header, jwt_data) -> User:
     return User.get_by_id(identity)
 
 
-
 # Decorators
 
 # Function to check if a provided JWT is valid and exists in the redis database (not revoked)

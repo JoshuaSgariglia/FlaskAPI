@@ -1,6 +1,7 @@
 from core import Context
 from authentication import bp as authentication_blueprint
 from api import bp as api_blueprint
+from utilities import RedisUtils
 
 # Get the app reference from Context
 app = Context().app()

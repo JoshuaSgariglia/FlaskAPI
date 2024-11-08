@@ -37,15 +37,29 @@ class RedisUtils:
     # Saves access and refresh tokens to Redis database
     @classmethod
     def save_tokens(cls, user: User, access_token: str, refresh_token: str):
-        user_id = user.id
-        cls.save_access_token(user_id, access_token)
-        cls.save_refresh_token(user_id, refresh_token)
+        cls.save_access_token(user, access_token)
+        cls.save_refresh_token(user, refresh_token)
 
     # Deletes any saved tokens for the provided user
     @classmethod
     def delete_tokens(cls, user: User):
-        user_id = user.id
         Context.redis().delete(cls.get_access_token_key(user), cls.get_refresh_token_key(user))
+
+    # Add roles to the list of roles for a user
+    @classmethod
+    def get_roles(cls, user: User) -> list[str]:
+        roles_key = f"user_{user.id}:roles"
+        return Context.redis().lrange(roles_key, 0, Context.redis().llen(roles_key))
+
+    # Add roles to the list of roles for a user
+    @classmethod
+    def add_roles(cls, user: User, roles: list[str]):
+        Context.redis().rpush(f"user_{user.id}:roles", *roles)
+
+    # Deletes a list of roles for a user
+    @classmethod
+    def delete_roles(cls, user: User):
+        Context.redis().delete(f"user_{user.id}:roles")
 
 
 # Flask utilities
