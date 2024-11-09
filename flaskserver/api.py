@@ -3,6 +3,7 @@ from flask_jwt_extended import current_user
 import requests
 from authorization import allow, deny
 from authentication import verify_token
+from utilities import RedisUtils
 from models import PasswordTooShortException, UsernameException
 from models import Task, User, UserRole
 
@@ -30,11 +31,7 @@ def user_data():
     user_dict.pop("_sa_instance_state")
 
     # Gets roles
-    role_list: list[UserRole] = UserRole.get_by_user_id(current_user.id)
-    rolenames: list[str] = []
-    for role in role_list:
-        rolenames.append(role.get_rolename)
-    user_dict["role_list"] = rolenames
+    user_dict["role_list"] = RedisUtils.get_roles(current_user);
     
     return flask.jsonify(user_dict), 200
 
