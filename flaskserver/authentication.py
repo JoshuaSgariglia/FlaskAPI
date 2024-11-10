@@ -1,7 +1,7 @@
 
 from functools import wraps
 import flask
-from flask_jwt_extended import current_user, get_jwt, verify_jwt_in_request
+from flask_jwt_extended import current_user as current_user_id, get_jwt, verify_jwt_in_request
 from flask_jwt_extended.view_decorators import LocationType
 from models import User
 from core import Context
@@ -19,17 +19,15 @@ jwt = Context().jwt()
 # Register a callback function that takes whatever object is passed in as the
 # identity when creating JWTs and converts it to a JSON serializable format.
 @jwt.user_identity_loader
-def user_identity_lookup(user: User) -> int:
-    return user.id
+def user_identity_lookup(user_id: int) -> int:
+    return user_id
 
-# Register a callback function that loads a user from your database whenever
+# Register a callback function that loads the user id whenever
 # a protected route is accessed. This should return any python object on a
-# successful lookup, or None if the lookup failed for any reason (for example
-# if the user has been deleted from the database).
+# successful lookup, or None if the lookup failed for any reason.
 @jwt.user_lookup_loader
-def user_lookup_callback(_jwt_header, jwt_data) -> User:
-    identity = jwt_data["sub"]
-    return User.get_by_id(identity)
+def user_lookup_callback(_jwt_header, jwt_data) -> int:
+    return jwt_data["sub"]
 
 
 # Decorators
@@ -51,7 +49,7 @@ def verify_token(
 
             # Checking if token is revoked
             # Getting access or refresh token - Access\refresh token is not present in Redis if revoked or expired
-            token_in_redis = RedisUtils.get_refresh_token(current_user) if refresh else RedisUtils.get_access_token(current_user)
+            token_in_redis = RedisUtils.get_refresh_token(current_user_id) if refresh else RedisUtils.get_access_token(current_user_id)
 
             # Getting the provided token
             token_provided = get_jwt()["jti"]
@@ -81,12 +79,11 @@ def login():
     if user is not None and Context.bcrypt().check_password_hash(user.password, password):
 
         # Creates and stores\overrides the access token and refresh token
-        access_token, refresh_token = FlaskUtils.generate_tokens(user, True)  # Fresh access token
+        access_token, refresh_token = FlaskUtils.generate_tokens(user.id, True)  # Fresh access token
 
         return flask.jsonify(access_token = access_token, refresh_token = refresh_token), 200
 
     return flask.jsonify(msg = "Bad username or password"), 401
-
 
 # Fresh login endpoint. This is designed to be used if we need to
 # make a fresh token for a user (by verifying they have the
@@ -106,7 +103,7 @@ def fresh_login():
     if user is not None and Context.bcrypt().check_password_hash(user.password, password):
 
         # Creates and stores\overrides the access token
-        access_token = FlaskUtils.generate_access_token(user, True)  # Fresh access token
+        access_token = FlaskUtils.generate_access_token(user.id, True)  # Fresh access token
 
         return flask.jsonify(access_token = access_token), 200
 
@@ -121,7 +118,7 @@ def fresh_login():
 @verify_token(refresh = True)
 def refresh():
     # Creates and stores\overrides the access token
-    access_token = FlaskUtils.generate_access_token(current_user, False)  # Non-fresh access token
+    access_token = FlaskUtils.generate_access_token(int(current_user_id), False)  # Non-fresh access token
     
     return flask.jsonify(access_token = access_token), 200
 
@@ -130,6 +127,6 @@ def refresh():
 @verify_token()
 def logout():
     # Revokes both the access and the refresh tokens
-    RedisUtils.delete_tokens(current_user)
+    RedisUtils.delete_tokens(current_user_id)
 
     return flask.jsonify(msg = "Access and refresh tokens revoked")

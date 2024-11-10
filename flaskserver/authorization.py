@@ -1,10 +1,9 @@
 from functools import wraps
 import flask
-from flask_jwt_extended import current_user
+from flask_jwt_extended import current_user as current_user_id
 from flask_jwt_extended.view_decorators import LocationType
 from authentication import verify_token
 from utilities import RedisUtils
-from models import UserRole
 
 
 # Decorators
@@ -24,9 +23,7 @@ def allow(
         @verify_token(optional, fresh, refresh, locations, verify_type, skip_revocation_check)
         def decorator_function(*args, **kwargs):
             # Checking user role
-            print(roles)
-            print(RedisUtils.get_roles(current_user))
-            for user_role in RedisUtils.get_roles(current_user):
+            for user_role in RedisUtils.get_roles(current_user_id):
                 if user_role in roles:
                     return f(*args, **kwargs)
             return flask.jsonify(msg = "Unauthorized"), 401
@@ -48,7 +45,7 @@ def deny(
         @verify_token(optional, fresh, refresh, locations, verify_type, skip_revocation_check)
         def decorator_function(*args, **kwargs):
             # Checking user role
-            for user_role in RedisUtils.get_roles(current_user):
+            for user_role in RedisUtils.get_roles(current_user_id):
                 if user_role in roles:
                     return flask.jsonify(msg = "Unauthorized"), 401
             return f(*args, **kwargs)

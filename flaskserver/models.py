@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
+from flask_jwt_extended import current_user as current_user_id
 from sqlalchemy import ForeignKeyConstraint, func
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import reconstructor
@@ -31,6 +32,10 @@ class User(db.Model):
     @classmethod
     def get_by_username(cls, username: str) -> User:
         return User.query.filter_by(username = username).one_or_none()
+    
+    @classmethod
+    def get_current_user(cls) -> User:
+        return User.get_by_id(current_user_id)
     
     def update_username(self, new_username: str) -> None:
         if len(new_username) < Context.min_username_length():

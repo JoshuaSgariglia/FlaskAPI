@@ -1,5 +1,5 @@
 import flask
-from flask_jwt_extended import current_user
+from flask_jwt_extended import current_user as current_user_id
 import requests
 from authorization import allow, deny
 from authentication import verify_token
@@ -26,12 +26,12 @@ def test_connection():
 @verify_token()
 def user_data():
     # Gets basic data
-    user_dict: dict[str, any] = current_user.__dict__
+    user_dict: dict[str, any] = User.get_current_user().__dict__
     user_dict.pop("password")
     user_dict.pop("_sa_instance_state")
 
     # Gets roles
-    user_dict["role_list"] = RedisUtils.get_roles(current_user);
+    user_dict["role_list"] = RedisUtils.get_roles(current_user_id)
     
     return flask.jsonify(user_dict), 200
 
@@ -44,7 +44,7 @@ def update_username():
     username = flask.request.data.decode("utf-8")
 
     try:
-        current_user.update_username(username)
+        User.get_current_user().update_username(username)
         
     except UsernameException as exception:
         return flask.jsonify(msg = exception.message, exceptionType = exception.__class__.__name__), 400
@@ -59,7 +59,7 @@ def update_password():
     password = flask.request.data.decode("utf-8")
 
     try: 
-        current_user.update_password(password)
+        User.get_current_user().update_password(password)
         
     except PasswordTooShortException as exception:
         return flask.jsonify(msg = exception.message, exceptionType = exception.__class__.__name__), 400
@@ -114,19 +114,19 @@ def querying():
 @allow(roles = ["Studente", "Professore", "Direttore"])
 def public():
     # Access the identity of the current user with "current_user"
-    return flask.jsonify(msg = current_user.username + " entered the public area"), 200
+    return flask.jsonify(msg = User.get_current_user().username + " entered the public area"), 200
 
 # Route potected with token and role
 @bp.route("/teachers-only", methods=["GET"])
 @deny(roles = ["Studente"])
 def teachers_only():
     # Access the identity of the current user with "current_user"
-    return flask.jsonify(msg = current_user.username + " entered the teachers area"), 200
+    return flask.jsonify(msg = User.get_current_user().username + " entered the teachers area"), 200
 
 # Get user tasks
 @bp.route("/user-tasks", methods=["GET"])
 @verify_token()
 def get_user_tasks():
-    return flask.jsonify(Task.get_by_user_id(current_user.id)), 200
+    return flask.jsonify(Task.get_by_user_id(current_user_id)), 200
 
 
