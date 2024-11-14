@@ -3,7 +3,7 @@ from functools import wraps
 import flask
 from flask_jwt_extended import current_user as current_user_id, get_jwt, verify_jwt_in_request
 from flask_jwt_extended.view_decorators import LocationType
-from models import User
+from models import User, UserRole
 from core import Context
 from utilities import FlaskUtils, RedisUtils
 
@@ -81,6 +81,9 @@ def login():
         # Creates and stores\overrides the access token and refresh token
         access_token, refresh_token = FlaskUtils.generate_tokens(user.id, True)  # Fresh access token
 
+        # Saves user roles that are stored in SQL database in Redis
+        FlaskUtils.save_roles_in_redis(user.id)
+
         return flask.jsonify(access_token = access_token, refresh_token = refresh_token), 200
 
     return flask.jsonify(msg = "Bad username or password"), 401
@@ -104,6 +107,9 @@ def fresh_login():
 
         # Creates and stores\overrides the access token
         access_token = FlaskUtils.generate_access_token(user.id, True)  # Fresh access token
+        
+        # Saves user roles that are stored in SQL database in Redis
+        FlaskUtils.save_roles_in_redis(user.id)
 
         return flask.jsonify(access_token = access_token), 200
 
@@ -128,5 +134,8 @@ def refresh():
 def logout():
     # Revokes both the access and the refresh tokens
     RedisUtils.delete_tokens(current_user_id)
+
+    # Deletes the list of roles of the user
+    RedisUtils.delete_roles(current_user_id)
 
     return flask.jsonify(msg = "Access and refresh tokens revoked")

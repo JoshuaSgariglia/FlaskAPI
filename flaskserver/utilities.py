@@ -1,5 +1,6 @@
 from flask_jwt_extended import create_access_token, create_refresh_token, decode_token
 from core import Context
+from models import UserRole
 
 # Redis utilities
 class RedisUtils:
@@ -12,6 +13,11 @@ class RedisUtils:
     @classmethod
     def get_refresh_token_key(cls, user_id: int) -> str:
         return f"user_{user_id}:refresh_token_identifier"
+    
+    # Generates the redis key for the roles
+    @classmethod
+    def get_roles_key(cls, user_id: int) -> str:
+        return f"user_{user_id}:roles"
     
     # Returns the access token for the specified user
     @classmethod
@@ -47,18 +53,25 @@ class RedisUtils:
     # Add roles to the list of roles for a user
     @classmethod
     def get_roles(cls, user_id: int) -> list[str]:
-        roles_key = f"user_{user_id}:roles"
+        roles_key = cls.get_roles_key(user_id)
         return Context.redis().lrange(roles_key, 0, Context.redis().llen(roles_key))
 
     # Add roles to the list of roles for a user
     @classmethod
     def add_roles(cls, user_id: int, roles: list[str]):
-        Context.redis().rpush(f"user_{user_id}:roles", *roles)
+        Context.redis().rpush(cls.get_roles_key(user_id), *roles)
 
     # Deletes a list of roles for a user
     @classmethod
     def delete_roles(cls, user_id: int):
-        Context.redis().delete(f"user_{user_id}:roles")
+        Context.redis().delete(cls.get_roles_key(user_id))
+
+    # Set a new list of roles for a user
+    @classmethod
+    def set_roles(cls, user_id: int, roles: list[str]):
+        cls.delete_roles(user_id)
+        cls.add_roles(user_id, roles)
+        Context.redis().expire(cls.get_roles_key(user_id), Context.app().config["JWT_REFRESH_TOKEN_EXPIRES"] + Context.app().config["JWT_ACCESS_TOKEN_EXPIRES"])
 
 
 # Flask utilities
@@ -91,3 +104,8 @@ class FlaskUtils:
         access_token = cls.generate_access_token(user_id, fresh_access_token)
         refresh_token = cls.generate_refresh_token(user_id)
         return access_token, refresh_token
+    
+    # Saves user roles that are stored in SQL database in Redis
+    @classmethod
+    def save_roles_in_redis(cls, user_id: int):
+        RedisUtils.set_roles(user_id, UserRole.get_rolenames_by_user_id(user_id))

@@ -60,6 +60,10 @@ class User(db.Model):
 class Role(db.Model):
     rolename: str = db.Column(db.String(30), primary_key = True)
 
+    @classmethod
+    def get_rolenames() -> list[str]:
+        return [role.rolename for role in Role.query.all()]
+
 @dataclass
 class UserRole(db.Model):
     user: int = db.Column(db.Integer, primary_key = True)
@@ -73,9 +77,9 @@ class UserRole(db.Model):
     def get_by_user_id(cls, user_id: int) -> list[UserRole]:
         return UserRole.query.filter_by(user = user_id).all()
     
-    @hybrid_property
-    def get_rolename(self) -> str:
-        return self.role
+    @classmethod
+    def get_rolenames_by_user_id(cls, user_id: int) -> list[str]:
+        return [role.role for role in UserRole.get_by_user_id(user_id)]
 
 @dataclass
 class Task(db.Model):
