@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from flask_jwt_extended import current_user as current_user_id
-from sqlalchemy import ForeignKeyConstraint, func
+from sqlalchemy import ForeignKeyConstraint, UniqueConstraint, func
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import reconstructor
 from core import Context
@@ -84,16 +84,50 @@ class UserRole(db.Model):
 @dataclass
 class Task(db.Model):
     id: int = db.Column(db.Integer, primary_key = True)
-    user: str = db.Column(db.String(20), unique = True, nullable = False)
+    area: int = db.Column(db.Integer, nullable = False)
+    user: str = db.Column(db.String(20), nullable = False)
     description: str = db.Column(db.String(200), nullable = False)
     completed: bool = db.Column(db.Boolean, default = False, nullable = False)
     __table_args__ = (
+        UniqueConstraint("area", "user", "description"),
         ForeignKeyConstraint([user], [User.id]),
     )
 
     @classmethod
-    def get_by_user_id(cls, user_id: int) -> list[str]:
+    def get_by_id(cls, task_id: int) -> Task:
+        return Task.query.filter_by(id = task_id).one_or_none()
+
+    @classmethod
+    def get_by_user_id(cls, user_id: int) -> list[Task]:
         return Task.query.filter_by(user = user_id).all()
+    
+    @classmethod
+    def get_by_user_id_and_area_id(cls, user_id: int, area_id: int) -> list[Task]:
+        return Task.query.filter_by(user = user_id, area = area_id).all()
+    
+    def set_completed(self, completed: bool) -> None:
+        self.completed = completed
+        db.session.commit()
+    
+@dataclass
+class Machine(db.Model):
+    id: int = db.Column(db.Integer, primary_key = True)
+    model: str = db.Column(db.String(50), nullable = False)
+    serial: str = db.Column(db.String(20), nullable = False)
+    type: str = db.Column(db.String(40), nullable = False)
+    manufacturer: str = db.Column(db.String(40), nullable = False)
+    width: int = db.Column(db.Integer, nullable = False)
+    depth: int = db.Column(db.Integer, nullable = False)
+    height: int = db.Column(db.Integer, nullable = False)
+    weight: int = db.Column(db.Integer, nullable = False)
+    purchase_year: str = db.Column(db.String(4), nullable = False)
+    __table_args__ = (
+        UniqueConstraint("model", "serial"),
+    )
+
+    @classmethod
+    def get_by_area_id(cls, area_id: int) -> list[str]:
+        return Task.query.filter_by(area = area_id).all()
     
 
 # Custom exceptions

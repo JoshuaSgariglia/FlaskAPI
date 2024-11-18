@@ -4,7 +4,7 @@ import requests
 from authorization import allow, deny
 from authentication import verify_token
 from utilities import RedisUtils
-from models import PasswordTooShortException, UsernameException
+from models import Machine, PasswordTooShortException, UsernameException
 from models import Task, User, UserRole
 
 # Define Blueprint
@@ -127,6 +127,35 @@ def teachers_only():
 @bp.route("/user-tasks", methods=["GET"])
 @verify_token()
 def get_user_tasks():
-    return flask.jsonify(Task.get_by_user_id(current_user_id)), 200
+    return flask.jsonify(Task.get_by_user_id_and_area_id(current_user_id, flask.request.args.get("area_id"))), 200
+
+# Update user task
+@bp.route("/user-task-update", methods=["PUT"])
+@verify_token()
+def update_user_task_state():
+    # Get the args
+    print(flask.request.data.decode("utf-8"))
+    data: dict[str, any] = eval(flask.request.data.decode("utf-8"))
+    task_id: int = data.get("task_id")
+    completed: bool = data.get("completed")
+
+    # Searches for the task
+    task: Task = Task.get_by_id(task_id)
+
+    # A user is only allowed to edit his tasks
+    if task.user != current_user_id:
+        return flask.jsonify(msg = "Not allowed to modify the requested user task"), 403
+
+    # Updates the task state in the database
+    task.set_completed(completed)
+
+    # Informs the use that the operation was successful
+    return flask.jsonify(msg = "Task state updated successfully"), 200
+
+# Get machine data
+@bp.route("/machines", methods=["GET"])
+@verify_token()
+def get_machines_by_area():
+    return flask.jsonify(Machine.get_by_area_id(flask.request.args.get("area_id"))), 200
 
 
