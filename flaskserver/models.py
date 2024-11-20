@@ -112,6 +112,7 @@ class Task(db.Model):
 @dataclass
 class Machine(db.Model):
     id: int = db.Column(db.Integer, primary_key = True)
+    area: int = db.Column(db.Integer, nullable = False)
     model: str = db.Column(db.String(50), nullable = False)
     serial: str = db.Column(db.String(20), nullable = False)
     type: str = db.Column(db.String(40), nullable = False)
@@ -126,8 +127,8 @@ class Machine(db.Model):
     )
 
     @classmethod
-    def get_by_area_id(cls, area_id: int) -> list[str]:
-        return Task.query.filter_by(area = area_id).all()
+    def get_by_area_id(cls, area_id: int) -> list[Machine]:
+        return Machine.query.filter_by(area = area_id).all()
     
 
 # Custom exceptions
