@@ -7,8 +7,9 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import reconstructor
 from core import Context
 
-# Get the reference from Context
+# Get the references from Context
 db = Context().db()
+bcrypt = Context().bcrypt()
 
 # Models
 @dataclass
@@ -37,6 +38,20 @@ class User(db.Model):
     def get_current_user(cls) -> User:
         return User.get_by_id(current_user_id)
     
+    @classmethod
+    def insert(cls, username: str, password: str) -> int:
+        if len(username) < Context.min_username_length():
+            raise UsernameTooShortException
+        
+        elif User.get_by_username(username) is not None:
+            raise UsernameExistsException
+        
+        else:
+            new_user = User(username = username, password = bcrypt.generate_password_hash(password))
+            db.session.add(new_user)
+            db.session.commit()
+            return new_user.id
+    
     def update_username(self, new_username: str) -> None:
         if len(new_username) < Context.min_username_length():
             raise UsernameTooShortException
@@ -61,8 +76,22 @@ class Role(db.Model):
     rolename: str = db.Column(db.String(30), primary_key = True)
 
     @classmethod
-    def get_rolenames() -> list[str]:
+    def get_by_rolename(cls, rolename: str) -> Role:
+        return Role.query.filter_by(rolename = rolename).one_or_none()
+
+    @classmethod
+    def get_rolenames(cls) -> list[str]:
         return [role.rolename for role in Role.query.all()]
+    
+    @classmethod
+    def exists(cls, rolename: str) -> bool:
+        return Role.get_by_rolename(rolename) is not None
+    
+    @classmethod
+    def insert(cls, rolename: str) -> None:
+        new_role = Role(rolename = rolename)
+        db.session.add(new_role)
+        db.session.commit()
 
 @dataclass
 class UserRole(db.Model):
@@ -80,6 +109,12 @@ class UserRole(db.Model):
     @classmethod
     def get_rolenames_by_user_id(cls, user_id: int) -> list[str]:
         return [role.role for role in UserRole.get_by_user_id(user_id)]
+    
+    @classmethod
+    def insert(cls, user_id: int, rolename: str) -> None:
+        new_user_role = UserRole(user = user_id, role = rolename)
+        db.session.add(new_user_role)
+        db.session.commit()
 
 @dataclass
 class Task(db.Model):

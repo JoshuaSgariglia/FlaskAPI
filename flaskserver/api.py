@@ -4,7 +4,7 @@ import requests
 from authorization import allow, deny
 from authentication import verify_token
 from utilities import RedisUtils
-from models import Machine, PasswordTooShortException, UsernameException
+from models import Machine, PasswordTooShortException, Role, UsernameException
 from models import Task, User, UserRole
 
 # Define Blueprint
@@ -107,21 +107,43 @@ def querying():
     response = requests.get(url, flask.request.args)
     
     # Acts like a Proxy and returns same stream response
-    return flask.Response(response.iter_content(), content_type = response.headers['Content-Type'])
+    return flask.Response(response, content_type = response.headers['Content-Type'])
 
-# Route protected with token and role
-@bp.route("/public", methods=["GET"])
-@allow(roles = ["Studente", "Professore", "Direttore"])
-def public():
-    # Access the identity of the current user with "current_user"
-    return flask.jsonify(msg = User.get_current_user().username + " entered the public area"), 200
+# Create and save a new user in the database
+@bp.route("/insert-user", methods=["POST"])
+@allow(roles = ["Titolare", "Amministratore di sistema"])
+def insert_user():
+    # Get body data
+    # Get the args
+    args = flask.request.form
+    username = args.get("username", None)
+    password = args.get("password", None)
+    rolename = args.get("rolename", None)
+    try:
+        # Username and password can't be None
+        if username is None:
+            return flask.jsonify(msg = "Bad request: missing username field"), 400
+        
+        if password is None:
+            return flask.jsonify(msg = "Bad request: missing password field"), 400
 
-# Route potected with token and role
-@bp.route("/teachers-only", methods=["GET"])
-@deny(roles = ["Studente"])
-def teachers_only():
-    # Access the identity of the current user with "current_user"
-    return flask.jsonify(msg = User.get_current_user().username + " entered the teachers area"), 200
+        # Insert new user
+        new_user_id: int = User.insert(username, password)
+
+        # Insert new role if it is not None
+        if rolename is not None:
+
+            # Insert new role if it doesn't exist
+            if not Role.exists(rolename):
+                Role.insert(rolename)
+            
+            # Assign that role to the new user
+            UserRole.insert(new_user_id, rolename)
+        
+    except UsernameException as exception:
+        return flask.jsonify(msg = exception.message, exceptionType = exception.__class__.__name__), 400
+
+    return flask.jsonify(msg = "User account created successfully"), 200
 
 # Get user tasks
 @bp.route("/user-tasks", methods=["GET"])

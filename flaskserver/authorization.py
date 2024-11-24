@@ -26,7 +26,7 @@ def allow(
             for user_role in RedisUtils.get_roles(current_user_id):
                 if user_role in roles:
                     return f(*args, **kwargs)
-            return flask.jsonify(msg = "Unauthorized"), 401
+            return flask.jsonify(msg = "Forbidden"), 403
         return decorator_function
     return decorator
 
@@ -47,7 +47,7 @@ def deny(
             # Checking user role
             for user_role in RedisUtils.get_roles(current_user_id):
                 if user_role in roles:
-                    return flask.jsonify(msg = "Unauthorized"), 401
+                    return flask.jsonify(msg = "Forbidden"), 403
             return f(*args, **kwargs)
         return decorator_function
     return decorator

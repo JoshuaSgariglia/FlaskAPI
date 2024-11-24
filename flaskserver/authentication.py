@@ -82,7 +82,7 @@ def login():
         access_token, refresh_token = FlaskUtils.generate_tokens(user.id, True)  # Fresh access token
 
         # Saves user roles that are stored in SQL database in Redis
-        FlaskUtils.save_roles_in_redis(user.id)
+        FlaskUtils.cache_roles_in_redis(user.id)
 
         return flask.jsonify(access_token = access_token, refresh_token = refresh_token), 200
 
@@ -109,7 +109,7 @@ def fresh_login():
         access_token = FlaskUtils.generate_access_token(user.id, True)  # Fresh access token
         
         # Saves user roles that are stored in SQL database in Redis
-        FlaskUtils.save_roles_in_redis(user.id)
+        FlaskUtils.cache_roles_in_redis(user.id)
 
         return flask.jsonify(access_token = access_token), 200
 
