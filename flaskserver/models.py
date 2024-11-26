@@ -117,6 +117,10 @@ class UserRole(db.Model):
         db.session.commit()
 
 @dataclass
+class Area(db.Model):
+    id: int = db.Column(db.Integer, primary_key = True)
+
+@dataclass
 class Task(db.Model):
     id: int = db.Column(db.Integer, primary_key = True)
     area: int = db.Column(db.Integer, nullable = False)
@@ -126,6 +130,7 @@ class Task(db.Model):
     __table_args__ = (
         UniqueConstraint("area", "user", "description"),
         ForeignKeyConstraint([user], [User.id]),
+        ForeignKeyConstraint([area], [Area.id]),
     )
 
     @classmethod
@@ -158,7 +163,8 @@ class Machine(db.Model):
     weight: int = db.Column(db.Integer, nullable = False)
     purchase_year: str = db.Column(db.String(4), nullable = False)
     __table_args__ = (
-        UniqueConstraint("model", "serial"),
+        UniqueConstraint("manufacturer", "model", "serial"),
+        ForeignKeyConstraint([area], [Area.id]),
     )
 
     @classmethod

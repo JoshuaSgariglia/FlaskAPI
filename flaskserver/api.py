@@ -66,49 +66,6 @@ def update_password():
 
     return flask.jsonify(msg = "Password updated successfully"), 200
 
-
-# API Routes
-
-# Route to get sensor info
-@bp.route("/get-sensor-info", methods=["GET"])
-@verify_token()
-def get_sensor_info():
-    room = flask.request.args.get("room", "kitchen")
-    url = f"http://193.205.129.120:63429/api/data?sensor_id=http:%2F%2Fhomey%2Fexample_graph%2Fsensor_mix_{room}"
-    print(f"Sensor data requested from {url}")
-
-    # Gets streams from API monitoring server
-    response = requests.get(url, stream = True)
-    
-    # Acts like a Proxy and returns same stream response
-    return flask.Response(response.iter_content(), content_type = response.headers['Content-Type'])
-
-# Route to access Monitoring API
-@bp.route("/monitoring", methods=["GET"])
-@verify_token()
-def monitoring():
-    url = f"http://193.205.129.120:63429/api/data"
-    print(f"Sensor data requested from {url}")
-
-    # Gets streams from API monitoring server
-    response = requests.get(url, flask.request.args, stream = True)
-    
-    # Acts like a Proxy and returns same stream response
-    return flask.Response(response.iter_content(), content_type = response.headers['Content-Type'])
-
-# Route to access Querying API
-@bp.route("/querying", methods=["GET"])
-@verify_token()
-def querying():
-    url = f"http://193.205.129.120:63429/api/data"
-    print(f"Sensor data requested from {url}")
-
-    # Gets streams from API querying server
-    response = requests.get(url, flask.request.args)
-    
-    # Acts like a Proxy and returns same stream response
-    return flask.Response(response, content_type = response.headers['Content-Type'])
-
 # Create and save a new user in the database
 @bp.route("/insert-user", methods=["POST"])
 @allow(roles = ["Titolare", "Amministratore di sistema"])
@@ -180,4 +137,46 @@ def update_user_task_state():
 def get_machines_by_area():
     return flask.jsonify(Machine.get_by_area_id(flask.request.args.get("area_id"))), 200
 
+
+# API Routes
+
+# Route to get sensor info
+@bp.route("/get-sensor-info", methods=["GET"])
+@verify_token()
+def get_sensor_info():
+    room = flask.request.args.get("room", "kitchen")
+    url = f"http://193.205.129.120:63429/api/data?sensor_id=http:%2F%2Fhomey%2Fexample_graph%2Fsensor_mix_{room}"
+    print(f"Sensor data requested from {url}")
+
+    # Gets streams from API monitoring server
+    response = requests.get(url, stream = True)
+    
+    # Acts like a Proxy and returns same stream response
+    return flask.Response(response.iter_content(), content_type = response.headers['Content-Type'])
+
+# Route to access Monitoring API
+@bp.route("/monitoring", methods=["GET"])
+@verify_token()
+def monitoring():
+    url = f"http://193.205.129.120:63429/api/data"
+    print(f"Sensor data requested from {url}")
+
+    # Gets streams from API monitoring server
+    response = requests.get(url, flask.request.args, stream = True)
+    
+    # Acts like a Proxy and returns same stream response
+    return flask.Response(response.iter_content(), content_type = response.headers['Content-Type'])
+
+# Route to access Querying API
+@bp.route("/querying", methods=["GET"])
+@verify_token()
+def querying():
+    url = f"http://193.205.129.120:63429/api/data"
+    print(f"Sensor data requested from {url}")
+
+    # Gets streams from API querying server
+    response = requests.get(url, flask.request.args)
+    
+    # Acts like a Proxy and returns same stream response
+    return flask.Response(response, content_type = response.headers['Content-Type'])
 
