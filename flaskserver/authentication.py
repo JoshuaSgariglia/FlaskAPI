@@ -1,4 +1,3 @@
-
 from functools import wraps
 import flask
 from flask_jwt_extended import current_user as current_user_id, get_jwt, verify_jwt_in_request

@@ -46,6 +46,9 @@ class User(db.Model):
         elif User.get_by_username(username) is not None:
             raise UsernameExistsException
         
+        elif len(password) < Context.min_password_length():
+            raise PasswordTooShortException
+        
         else:
             new_user = User(username = username, password = bcrypt.generate_password_hash(password))
             db.session.add(new_user)

@@ -66,6 +66,35 @@ def update_password():
 
     return flask.jsonify(msg = "Password updated successfully"), 200
 
+# Get user tasks
+@bp.route("/user-tasks", methods=["GET"])
+@verify_token()
+def get_user_tasks():
+    return flask.jsonify(Task.get_by_user_id_and_area_id(current_user_id, flask.request.args.get("area_id"))), 200
+
+# Update user task
+@bp.route("/user-task-update", methods=["PUT"])
+@verify_token()
+def update_user_task_state():
+    # Get the args
+    print(flask.request.data.decode("utf-8"))
+    data: dict[str, any] = eval(flask.request.data.decode("utf-8"))
+    task_id: int = data.get("task_id")
+    completed: bool = data.get("completed")
+
+    # Searches for the task
+    task: Task = Task.get_by_id(task_id)
+
+    # A user is only allowed to edit his tasks
+    if task.user != current_user_id:
+        return flask.jsonify(msg = "Not allowed to modify the requested user task"), 403
+
+    # Updates the task state in the database
+    task.set_completed(completed)
+
+    # Informs the use that the operation was successful
+    return flask.jsonify(msg = "Task state updated successfully"), 200
+
 # Create and save a new user in the database
 @bp.route("/insert-user", methods=["POST"])
 @allow(roles = ["Titolare", "Amministratore di sistema"])
@@ -97,66 +126,23 @@ def insert_user():
             # Assign that role to the new user
             UserRole.insert(new_user_id, rolename)
         
-    except UsernameException as exception:
+    except (UsernameException, PasswordTooShortException) as exception:
         return flask.jsonify(msg = exception.message, exceptionType = exception.__class__.__name__), 400
 
     return flask.jsonify(msg = "User account created successfully"), 200
 
-# Get user tasks
-@bp.route("/user-tasks", methods=["GET"])
-@verify_token()
-def get_user_tasks():
-    return flask.jsonify(Task.get_by_user_id_and_area_id(current_user_id, flask.request.args.get("area_id"))), 200
-
-# Update user task
-@bp.route("/user-task-update", methods=["PUT"])
-@verify_token()
-def update_user_task_state():
-    # Get the args
-    print(flask.request.data.decode("utf-8"))
-    data: dict[str, any] = eval(flask.request.data.decode("utf-8"))
-    task_id: int = data.get("task_id")
-    completed: bool = data.get("completed")
-
-    # Searches for the task
-    task: Task = Task.get_by_id(task_id)
-
-    # A user is only allowed to edit his tasks
-    if task.user != current_user_id:
-        return flask.jsonify(msg = "Not allowed to modify the requested user task"), 403
-
-    # Updates the task state in the database
-    task.set_completed(completed)
-
-    # Informs the use that the operation was successful
-    return flask.jsonify(msg = "Task state updated successfully"), 200
-
 # Get machine data
 @bp.route("/machines", methods=["GET"])
-@verify_token()
+@allow("Dipendente", "Titolare", "Amministratore di sistema")
 def get_machines_by_area():
     return flask.jsonify(Machine.get_by_area_id(flask.request.args.get("area_id"))), 200
 
 
 # API Routes
 
-# Route to get sensor info
-@bp.route("/get-sensor-info", methods=["GET"])
-@verify_token()
-def get_sensor_info():
-    room = flask.request.args.get("room", "kitchen")
-    url = f"http://193.205.129.120:63429/api/data?sensor_id=http:%2F%2Fhomey%2Fexample_graph%2Fsensor_mix_{room}"
-    print(f"Sensor data requested from {url}")
-
-    # Gets streams from API monitoring server
-    response = requests.get(url, stream = True)
-    
-    # Acts like a Proxy and returns same stream response
-    return flask.Response(response.iter_content(), content_type = response.headers['Content-Type'])
-
 # Route to access Monitoring API
 @bp.route("/monitoring", methods=["GET"])
-@verify_token()
+@allow("Dipendente", "Titolare", "Amministratore di sistema")
 def monitoring():
     url = f"http://193.205.129.120:63429/api/data"
     print(f"Sensor data requested from {url}")
@@ -169,7 +155,7 @@ def monitoring():
 
 # Route to access Querying API
 @bp.route("/querying", methods=["GET"])
-@verify_token()
+@allow("Dipendente", "Titolare", "Amministratore di sistema")
 def querying():
     url = f"http://193.205.129.120:63429/api/data"
     print(f"Sensor data requested from {url}")
