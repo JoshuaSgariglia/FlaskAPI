@@ -6,7 +6,7 @@ from flask_bcrypt import Bcrypt
 from redis import StrictRedis
 
 
-# Singleton superclass
+# Singleton metaclass
 class SingletonMeta(type):
     _instances = {}
     def __call__(cls, *args, **kwargs):
