@@ -15,7 +15,7 @@ def allow(
         refresh: bool = False, 
         locations: LocationType = None,
         verify_type: bool = True,
-        skip_revocation_check: bool = True  # Recommended method not implemented because it is based on a blocklist
+        skip_revocation_check: bool = False
         ):
     def decorator(f):
         @wraps(f)
