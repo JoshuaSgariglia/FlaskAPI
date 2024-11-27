@@ -1,6 +1,6 @@
 from functools import wraps
 import flask
-from flask_jwt_extended import current_user as current_user_id
+from flask_jwt_extended import current_user as current_user_id, get_jwt
 from flask_jwt_extended.view_decorators import LocationType
 from authentication import verify_token
 from utilities import RedisUtils
@@ -11,6 +11,7 @@ from utilities import RedisUtils
 # Grants access to users with at least one of "roles"
 def allow(
         roles: list[str] = [],
+        optional: bool = False,
         fresh: bool = False, 
         refresh: bool = False, 
         locations: LocationType = None,
@@ -19,8 +20,12 @@ def allow(
         ):
     def decorator(f):
         @wraps(f)
-        @verify_token(False, fresh, refresh, locations, verify_type, skip_revocation_check)
+        @verify_token(optional, fresh, refresh, locations, verify_type, skip_revocation_check)
         def decorator_function(*args, **kwargs):
+            # Check authorization only if token is provided
+            if get_jwt().get("jti", None) is None:
+                return f(*args, **kwargs) 
+
             # Checking user role
             for user_role in RedisUtils.get_roles(current_user_id):
                 if user_role in roles:
@@ -32,6 +37,7 @@ def allow(
 # Denies access to users with at least one of "roles"
 def deny(
         roles: list[str] = [],
+        optional: bool = False,
         fresh: bool = False, 
         refresh: bool = False, 
         locations: LocationType = None,
@@ -40,8 +46,12 @@ def deny(
         ):
     def decorator(f):
         @wraps(f)
-        @verify_token(False, fresh, refresh, locations, verify_type, skip_revocation_check)
+        @verify_token(optional, fresh, refresh, locations, verify_type, skip_revocation_check)
         def decorator_function(*args, **kwargs):
+            # Check authorization only if token is provided
+            if get_jwt().get("jti", None) is None:
+                return f(*args, **kwargs) 
+
             # Checking user role
             for user_role in RedisUtils.get_roles(current_user_id):
                 if user_role in roles:
