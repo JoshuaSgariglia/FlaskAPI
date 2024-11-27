@@ -44,6 +44,10 @@ def verify_token(
         @wraps(f)
         @jwt_required(optional, fresh, refresh, locations, verify_type, skip_revocation_check)
         def decorator_function(*args, **kwargs):
+            # Skip the check if token is optional
+            if optional:
+                return f(*args, **kwargs)
+
             # Checking if token is revoked
             # Getting the jti of the access or refresh token - it is not present in Redis if revoked or expired
             jti_in_redis = (RedisUtils.get_refresh_token(current_user_id) if refresh 

@@ -10,8 +10,7 @@ from utilities import RedisUtils
 
 # Grants access to users with at least one of "roles"
 def allow(
-        roles: list[str] = [], 
-        optional: bool = False, 
+        roles: list[str] = [],
         fresh: bool = False, 
         refresh: bool = False, 
         locations: LocationType = None,
@@ -20,7 +19,7 @@ def allow(
         ):
     def decorator(f):
         @wraps(f)
-        @verify_token(optional, fresh, refresh, locations, verify_type, skip_revocation_check)
+        @verify_token(False, fresh, refresh, locations, verify_type, skip_revocation_check)
         def decorator_function(*args, **kwargs):
             # Checking user role
             for user_role in RedisUtils.get_roles(current_user_id):
@@ -32,8 +31,7 @@ def allow(
 
 # Denies access to users with at least one of "roles"
 def deny(
-        roles: list[str] = [], 
-        optional: bool = False, 
+        roles: list[str] = [],
         fresh: bool = False, 
         refresh: bool = False, 
         locations: LocationType = None,
@@ -42,7 +40,7 @@ def deny(
         ):
     def decorator(f):
         @wraps(f)
-        @verify_token(optional, fresh, refresh, locations, verify_type, skip_revocation_check)
+        @verify_token(False, fresh, refresh, locations, verify_type, skip_revocation_check)
         def decorator_function(*args, **kwargs):
             # Checking user role
             for user_role in RedisUtils.get_roles(current_user_id):
