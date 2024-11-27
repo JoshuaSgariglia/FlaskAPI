@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from flask_jwt_extended import current_user as current_user_id
 from sqlalchemy import ForeignKeyConstraint, UniqueConstraint, func
-from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import reconstructor
 from core import Context
 
@@ -22,9 +21,8 @@ class User(db.Model):
     # Acts as the default init
     @reconstructor
     def __init_on_load(self):
-        '''self.is_authenticated: bool = False
-        self.is_active: bool = True
-        self.is_anonymous: bool = False'''
+        '''self.is_active: bool = True
+        other initialization code'''
 
     @classmethod
     def get_by_id(cls, user_id: int) -> User:
