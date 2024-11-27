@@ -79,8 +79,6 @@ def login():
     username = args.get("username", None)
     password = args.get("password", None)
 
-    print(args.__str__())
-
     user: User = User.get_by_username(username)
 
     if user is not None and Context.bcrypt().check_password_hash(user.password, password):
