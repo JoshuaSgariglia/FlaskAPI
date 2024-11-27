@@ -32,12 +32,14 @@ class RedisUtils:
     # Saves access token to Redis database
     @classmethod
     def save_access_token(cls, user_id: int, token: str):
-        Context.redis().set(cls.get_access_token_key(user_id), decode_token(token)["jti"], ex=Context.app().config["JWT_ACCESS_TOKEN_EXPIRES"])
+        Context.redis().set(cls.get_access_token_key(user_id), decode_token(token)["jti"], 
+                            ex=Context.app().config["JWT_ACCESS_TOKEN_EXPIRES"])
 
     # Saves refresh token to Redis database
     @classmethod
     def save_refresh_token(cls, user_id: int, token: str):
-        Context.redis().set(cls.get_refresh_token_key(user_id), decode_token(token)["jti"], ex=Context.app().config["JWT_REFRESH_TOKEN_EXPIRES"])
+        Context.redis().set(cls.get_refresh_token_key(user_id), decode_token(token)["jti"], 
+                            ex=Context.app().config["JWT_REFRESH_TOKEN_EXPIRES"])
 
     # Saves access and refresh tokens to Redis database
     @classmethod
@@ -71,7 +73,9 @@ class RedisUtils:
     def set_roles(cls, user_id: int, roles: list[str]):
         cls.delete_roles(user_id)
         cls.add_roles(user_id, roles)
-        Context.redis().expire(cls.get_roles_key(user_id), Context.app().config["JWT_REFRESH_TOKEN_EXPIRES"] + Context.app().config["JWT_ACCESS_TOKEN_EXPIRES"])
+        Context.redis().expire(cls.get_roles_key(user_id), 
+                               Context.app().config["JWT_REFRESH_TOKEN_EXPIRES"] + 
+                               Context.app().config["JWT_ACCESS_TOKEN_EXPIRES"])
 
 
 # Flask utilities
