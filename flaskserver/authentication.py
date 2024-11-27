@@ -46,7 +46,8 @@ def verify_token(
         def decorator_function(*args, **kwargs):
             # Checking if token is revoked
             # Getting access or refresh token - Access\refresh token is not present in Redis if revoked or expired
-            token_in_redis = RedisUtils.get_refresh_token(current_user_id) if refresh else RedisUtils.get_access_token(current_user_id)
+            token_in_redis = (RedisUtils.get_refresh_token(current_user_id) if refresh 
+                              else RedisUtils.get_access_token(current_user_id))
 
             # Getting the provided token
             token_provided = get_jwt()["jti"]
