@@ -1,6 +1,6 @@
 from functools import wraps
 import flask
-from flask_jwt_extended import current_user as current_user_id, get_jwt, verify_jwt_in_request
+from flask_jwt_extended import current_user as current_user_id, get_jwt, jwt_required
 from flask_jwt_extended.view_decorators import LocationType
 from models import User, UserRole
 from core import Context
@@ -42,10 +42,8 @@ def verify_token(
         ):
     def decorator(f):
         @wraps(f)
+        @jwt_required(optional, fresh, refresh, locations, verify_type, skip_revocation_check)
         def decorator_function(*args, **kwargs):
-            # Calling @jwt_required()
-            verify_jwt_in_request(optional, fresh, refresh, locations, verify_type, skip_revocation_check)
-
             # Checking if token is revoked
             # Getting access or refresh token - Access\refresh token is not present in Redis if revoked or expired
             token_in_redis = RedisUtils.get_refresh_token(current_user_id) if refresh else RedisUtils.get_access_token(current_user_id)
