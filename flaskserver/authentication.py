@@ -44,17 +44,17 @@ def verify_token(
         @wraps(f)
         @jwt_required(optional, fresh, refresh, locations, verify_type, skip_revocation_check)
         def decorator_function(*args, **kwargs):
-            # Skip the check if token is optional
-            if optional:
-                return f(*args, **kwargs)
+            # Getting the jti of the provided token
+            jti_provided = get_jwt().get("jti", None)
+
+            # Token can be None if optional
+            if jti_provided is None:
+                return f(*args, **kwargs) if optional else flask.jsonify(message = "Token has been revoked"), 401
 
             # Checking if token is revoked
             # Getting the jti of the access or refresh token - it is not present in Redis if revoked or expired
             jti_in_redis = (RedisUtils.get_refresh_token(current_user_id) if refresh 
                               else RedisUtils.get_access_token(current_user_id))
-
-            # Getting the jti of the provided token
-            jti_provided = get_jwt()["jti"]
 
             if jti_in_redis is None or jti_in_redis != jti_provided:  # Must evaluate to TRUE if revoked
                 return flask.jsonify(message = "Token has been revoked"), 401
