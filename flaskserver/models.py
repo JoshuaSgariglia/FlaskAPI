@@ -129,7 +129,6 @@ class Task(db.Model):
     description: str = db.Column(db.String(200), nullable = False)
     completed: bool = db.Column(db.Boolean, default = False, nullable = False)
     __table_args__ = (
-        UniqueConstraint("area", "user", "description"),
         ForeignKeyConstraint([user], [User.id]),
         ForeignKeyConstraint([area], [Area.id]),
     )
