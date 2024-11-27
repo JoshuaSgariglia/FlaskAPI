@@ -2,7 +2,7 @@ from functools import wraps
 import flask
 from flask_jwt_extended import current_user as current_user_id, get_jwt, jwt_required
 from flask_jwt_extended.view_decorators import LocationType
-from models import User, UserRole
+from models import User
 from core import Context
 from utilities import FlaskUtils, RedisUtils
 
