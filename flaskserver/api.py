@@ -77,7 +77,6 @@ def get_user_tasks():
 @verify_token()
 def update_user_task_state():
     # Get the args
-    print(flask.request.data.decode("utf-8"))
     data: dict[str, any] = eval(flask.request.data.decode("utf-8"))
     task_id: int = data.get("task_id")
     completed: bool = data.get("completed")
