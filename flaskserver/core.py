@@ -24,11 +24,11 @@ class Context(metaclass = SingletonMeta):
     __redis: StrictRedis = None
 
     def __init__(self):
-        ApplicationInitializer.initialize()
+        self.__set_modules(*ApplicationInitializer.initialize())
         print(f"Initialization completed")
 
     @classmethod
-    def initialize(cls, app: Flask, db: SQLAlchemy, jwt: JWTManager, bcrypt: Bcrypt, redis: StrictRedis):
+    def __set_modules(cls, app: Flask, db: SQLAlchemy, jwt: JWTManager, bcrypt: Bcrypt, redis: StrictRedis):
         # Initialize the class variables
         cls.__app = app
         cls.__db = db
@@ -70,7 +70,7 @@ class Context(metaclass = SingletonMeta):
 # ApplicationInitializer class  
 class ApplicationInitializer:
     @classmethod
-    def initialize(cls):
+    def initialize(cls) -> tuple[Flask, SQLAlchemy, JWTManager, Bcrypt, StrictRedis]:
         # Initialize the Flask library
         app = Flask(__name__)
 
@@ -112,5 +112,5 @@ class ApplicationInitializer:
             decode_responses=True
         )
 
-        # Initialize the Context with the Flask app and the database
-        Context.initialize(app, db, jwt, bcrypt, redis)
+        # Initialize the Context with all the modules
+        return (app, db, jwt, bcrypt, redis)
