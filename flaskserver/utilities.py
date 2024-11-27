@@ -113,3 +113,4 @@ class FlaskUtils:
     @classmethod
     def cache_roles_in_redis(cls, user_id: int):
         RedisUtils.set_roles(user_id, UserRole.get_rolenames_by_user_id(user_id))
+        
