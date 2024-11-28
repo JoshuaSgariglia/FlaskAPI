@@ -40,7 +40,6 @@ def user_data():
 @verify_token(fresh = True)
 def update_username():
     # Get the args
-    print()
     username = flask.request.data.decode("utf-8")
 
     try:
