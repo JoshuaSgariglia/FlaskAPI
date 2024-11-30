@@ -131,7 +131,7 @@ def insert_user():
 
 # Get machine data
 @bp.route("/machines", methods=["GET"])
-@allow("Dipendente", "Titolare", "Amministratore di sistema")
+@allow(["Dipendente", "Titolare", "Amministratore di sistema"])
 def get_machines_by_area():
     return flask.jsonify(Machine.get_by_area_id(flask.request.args.get("area_id"))), 200
 
@@ -140,7 +140,7 @@ def get_machines_by_area():
 
 # Route to access Monitoring API
 @bp.route("/monitoring", methods=["GET"])
-@allow("Dipendente", "Titolare", "Amministratore di sistema")
+@allow(["Dipendente", "Titolare", "Amministratore di sistema"])
 def monitoring():
     url = f"http://193.205.129.120:63429/api/data"
     print(f"Sensor data requested from {url}")
@@ -153,7 +153,7 @@ def monitoring():
 
 # Route to access Querying API
 @bp.route("/querying", methods=["GET"])
-@allow("Dipendente", "Titolare", "Amministratore di sistema")
+@allow(["Dipendente", "Titolare", "Amministratore di sistema"])
 def querying():
     url = f"http://193.205.129.120:63429/api/data"
     print(f"Sensor data requested from {url}")
